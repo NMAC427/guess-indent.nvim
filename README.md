@@ -3,8 +3,10 @@
 Blazing fast indentation style detection for Neovim written in Lua.
 The goal of this plugin is to automatically detect the indentation style used
 in a buffer and updating the buffer options accordingly.
-This mimics the "Guess Indentation Settings From Buffer" function of Sublime
-Text.
+This mimics the "*Guess Indentation Settings From Buffer*" function built into
+Sublime Text.
+
+<img src="https://user-images.githubusercontent.com/9914734/154780206-c60eda09-175d-4ee8-81be-2aea1fcaadf4.gif" style="width: 100%">
 
 ## How it works
 
@@ -52,14 +54,6 @@ Normally it should not be necessary to disable the automatic execution of
 guess-indent, because it usually takes less than a millisecond to run,
 even for large files.
 
-## Inspiration
-
-This plugin was inspired by
-[DubFriend/guess-indent](https://github.com/DubFriend/guess-indent)
-and
-[Darazaki/indent-o-matic](https://github.com/Darazaki/indent-o-matic)
-.
-
 ## Licence
 
 ```
@@ -85,3 +79,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+#### Credit
+
+This plugin was inspired by
+[DubFriend/guess-indent](https://github.com/DubFriend/guess-indent)
+and
+[Darazaki/indent-o-matic](https://github.com/Darazaki/indent-o-matic)
+.
