@@ -15,25 +15,35 @@ local function setup_autocommands()
   ]]
 end
 
--- https://github.com/hrsh7th/nvim-cmp/blob/main/lua/cmp/config/context.lua
--- For this to work, you must execute the following command first:
---   :syntax sync minlines=2 maxlines=2
-local function is_comment(l_idx, c_idx)
-  for _, syn_id in ipairs(vim.fn.synstack(l_idx, c_idx)) do
-    syn_id = vim.fn.synIDtrans(syn_id)
-    local syn_name = vim.fn.synIDattr(syn_id, "name")
-    if syn_name:sub(-7) == "Comment" then
-      return true
-    end
-  end
-
-  return false
+-- Return true if the string looks like an inline comment.
+-- SEE: https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax)#Inline_comments
+local function is_comment_inline(line)
+  -- Check if it starts with a comment prefix
+  return not not (
+    line:match("^//") or    -- C style
+    line:match("^#") or     -- Python, Shell, Perl
+    line:match("^%-%-") or  -- Lua, Haskell
+    line:match("^%%") or    -- TeX
+    line:match("^;")        -- Lisp, Assembly
+  )
 end
 
-local function is_comment_fast(char)
- -- Return true for any non alphanumeric or space character
- -- This is far from perfect but significantly faster
- return not char:match("[%w%s]")
+-- Only check beginning of line. Else we would need an actual parser to
+-- determine if a line contains a valid block comment start.
+-- Returns either a LUA pattern to match the closing block comment or
+-- nil if this line doesn't start a block comment.
+--
+-- SEE: https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax)#Block_comments
+local function is_comment_block_start(line)
+  if line:match("^/%*") then 
+    -- C style  /*  */
+    return "%*/"
+  elseif line:match("^<!%-%-") then
+    -- HTML  <!--  -->
+    return "%-%->"
+  end
+
+  return nil
 end
 
 local function set_indentation(indentation)
@@ -72,40 +82,71 @@ function M.guess_from_buffer()
   local spaces = {}
   local prev_space_delta = 0
 
+  -- Optional multiline comment termination pattern that we're matching against.
+  local multiline_pattern = nil
+
+
   -- Check each line for its indentation
   for l_idx, line in ipairs(lines) do
     local space_count = 0
     local tab_count = 0
 
-    local line_is_empty = true
-
     -- Ignore empty lines. They screw up the last_xxx_count variables
-    if #line == 0 then
+    if not line:find("[^%s]") then
+      goto next_line
+    end
+
+    -- Check if multiline comment terminates here
+    if multiline_pattern then
+      if line:match(multiline_pattern) then
+        multiline_pattern = nil
+      end
       goto next_line
     end
 
     -- Calculate indentation for this line
     for c_idx = 1, math.min(#line, 72) do
-
       local char = line:sub(c_idx, c_idx)
       if char == " " then
         space_count = space_count + 1
       elseif char == "\t" then
         tab_count = tab_count + 1
       else
-        -- If line is a comment then discard indentation
-        if c_idx ~= 1 and is_comment_fast(char) then
+        -- We must check if the line is a comment. If it is,
+        -- then we must skip it. Ideally this would be done using a
+        -- tool like treesitter.
+
+        -- If the line starts with whitespace followed by a letter or
+        -- number it very likely isn't the start of a comment.
+        if c_idx ~= 1 or char:match("[%w%d]") then
+          break
+        end
+
+        -- Take the first 10 non whitespace characters of the line.
+        local subline = line:sub(c_idx, c_idx + 9)
+
+        -- Inline / single line comments
+        if is_comment_inline(subline) then
           goto next_line
         end
 
-        line_is_empty = false
+        -- Start of a multiline comment
+        -- For now, we only consider multiline comments that start at the
+        -- beginning (excluding whitespace) of a line.
+        multiline_pattern = is_comment_block_start(subline)
+        if multiline_pattern then
+          -- Check if the comment ends on this line
+
+          if line:match(multiline_pattern) then
+            multiline_pattern = nil
+          end
+
+          goto next_line
+        end
+
+        -- This line isn't a comment -> exit the loop
         break
       end
-    end
-
-    -- Line only contains whitespace -> skip
-    if line_is_empty then
-      goto next_line
     end
 
 
