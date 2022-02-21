@@ -67,7 +67,7 @@ local function set_indentation(indentation)
   end
 end
 
-function M.guess_from_buffer()
+function M.guess_from_buffer(verbose)
   local lines = vim.api.nvim_buf_get_lines(0, 0, 1024, false)
 
   -- How many lines use spaces / tabs
@@ -180,6 +180,17 @@ function M.guess_from_buffer()
     ::next_line::
   end
 
+  if verbose then
+    print("Guess Indent:")
+    print("Lines using tabs:", tab_lines_count)
+    print("Lines using spaces:", space_lines_count)
+
+    if space_lines_count ~= 0 then
+      for k, v in pairs(spaces) do
+        print(k, "space:", v)
+      end
+    end
+  end
 
   -- Get most common indentation style
   if (tab_lines_count > space_lines_count and tab_lines_count > 0) then
