@@ -35,7 +35,7 @@ end
 --
 -- SEE: https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax)#Block_comments
 local function is_comment_block_start(line)
-  if line:match("^/%*") then 
+  if line:match("^/%*") then
     -- C style  /*  */
     return "%*/"
   elseif line:match("^<!%-%-") then
@@ -68,7 +68,10 @@ local function set_indentation(indentation)
 end
 
 function M.guess_from_buffer(verbose)
-  local lines = vim.api.nvim_buf_get_lines(0, 0, 1024, false)
+  -- Line loading configuration
+  -- Instead of loading all lines at once, load them lazily in chunks.
+  local max_num_lines = 1028
+  local chunk_size = 64
 
   -- How many lines use spaces / tabs
   local space_lines_count = 0
@@ -82,103 +85,118 @@ function M.guess_from_buffer(verbose)
   local spaces = {}
   local prev_space_delta = 0
 
+  -- Verbose Statistics
+  local v_num_lines_loaded = 0
+  local v_lines_iterated = 0
+
   -- Optional multiline comment termination pattern that we're matching against.
   local multiline_pattern = nil
 
+  for chunk_start = 0, (max_num_lines-1), chunk_size do
+    -- Load new chunk
+    local lines = vim.api.nvim_buf_get_lines(0, chunk_start, math.min(chunk_start + chunk_size, max_num_lines), false)
+    v_num_lines_loaded = v_num_lines_loaded + #lines
 
-  -- Check each line for its indentation
-  for l_idx, line in ipairs(lines) do
-    local space_count = 0
-    local tab_count = 0
+    -- Check each line for its indentation
+    for l_idx, line in ipairs(lines) do
+      l_idx = l_idx + chunk_start
+      v_lines_iterated = l_idx
 
-    -- Ignore empty lines. They screw up the last_xxx_count variables
-    if not line:find("[^%s]") then
-      goto next_line
-    end
+      local space_count = 0
+      local tab_count = 0
 
-    -- Check if multiline comment terminates here
-    if multiline_pattern then
-      if line:match(multiline_pattern) then
-        multiline_pattern = nil
+      -- Ignore empty lines. They screw up the last_xxx_count variables
+      if not line:find("[^%s]") then
+        goto next_line
       end
-      goto next_line
-    end
 
-    -- Calculate indentation for this line
-    for c_idx = 1, math.min(#line, 72) do
-      local char = line:sub(c_idx, c_idx)
-      if char == " " then
-        space_count = space_count + 1
-      elseif char == "\t" then
-        tab_count = tab_count + 1
-      else
-        -- We must check if the line is a comment. If it is,
-        -- then we must skip it. Ideally this would be done using a
-        -- tool like treesitter.
-
-        -- If the line starts with whitespace followed by a letter or
-        -- number it very likely isn't the start of a comment.
-        if c_idx ~= 1 or char:match("[%w%d]") then
-          break
+      -- Check if multiline comment terminates here
+      if multiline_pattern then
+        if line:match(multiline_pattern) then
+          multiline_pattern = nil
         end
+        goto next_line
+      end
 
-        -- Take the first 10 non whitespace characters of the line.
-        local subline = line:sub(c_idx, c_idx + 9)
+      -- Calculate indentation for this line
+      for c_idx = 1, math.min(#line, 72) do
+        local char = line:sub(c_idx, c_idx)
+        if char == " " then
+          space_count = space_count + 1
+        elseif char == "\t" then
+          tab_count = tab_count + 1
+        else
+          -- We must check if the line is a comment. If it is,
+          -- then we must skip it. Ideally this would be done using a
+          -- tool like treesitter.
 
-        -- Inline / single line comments
-        if is_comment_inline(subline) then
-          goto next_line
-        end
-
-        -- Start of a multiline comment
-        -- For now, we only consider multiline comments that start at the
-        -- beginning (excluding whitespace) of a line.
-        multiline_pattern = is_comment_block_start(subline)
-        if multiline_pattern then
-          -- Check if the comment ends on this line
-
-          if line:match(multiline_pattern) then
-            multiline_pattern = nil
+          -- If the line starts with whitespace followed by a letter or
+          -- number it very likely isn't the start of a comment.
+          if c_idx ~= 1 or char:match("[%w%d]") then
+            break
           end
 
-          goto next_line
+          -- Take the first 10 non whitespace characters of the line.
+          local subline = line:sub(c_idx, c_idx + 9)
+
+          -- Inline / single line comments
+          if is_comment_inline(subline) then
+            goto next_line
+          end
+
+          -- Start of a multiline comment
+          -- For now, we only consider multiline comments that start at the
+          -- beginning (excluding whitespace) of a line.
+          multiline_pattern = is_comment_block_start(subline)
+          if multiline_pattern then
+            -- Check if the comment ends on this line
+
+            if line:match(multiline_pattern) then
+              multiline_pattern = nil
+            end
+
+            goto next_line
+          end
+
+          -- This line isn't a comment -> exit the loop
+          break
+        end
+      end
+
+
+      if tab_count ~= 0 and space_count == 0 and last_space_count == 0 then
+        -- Is using tabs
+        tab_lines_count = tab_lines_count + 1
+      end
+
+      if space_count ~= 0 and tab_count == 0 and last_tab_count == 0 then
+        -- Is using spaces
+        local delta = math.abs(last_space_count - space_count)
+
+        if delta == 0 then
+          delta = prev_space_delta
+        else
+          prev_space_delta = delta
         end
 
-        -- This line isn't a comment -> exit the loop
-        break
-      end
-    end
-
-
-    if tab_count ~= 0 and space_count == 0 and last_space_count == 0 then
-      -- Is using tabs
-      tab_lines_count = tab_lines_count + 1
-    end
-
-    if space_count ~= 0 and tab_count == 0 and last_tab_count == 0 then
-      -- Is using spaces
-      local delta = math.abs(last_space_count - space_count)
-
-      if delta == 0 then
-        delta = prev_space_delta
-      else
-        prev_space_delta = delta
+        spaces[delta] = (spaces[delta] or 0) + 1
+        space_lines_count = space_lines_count + 1
       end
 
-      spaces[delta] = (spaces[delta] or 0) + 1
-      space_lines_count = space_lines_count + 1
+      last_space_count = space_count
+      last_tab_count = tab_count
+
+      -- We have gathered enough evidence to stop early
+      if math.abs(space_lines_count - tab_lines_count) >= 128 then
+        goto prepare_result
+      end
+
+      ::next_line::
     end
-
-    last_space_count = space_count
-    last_tab_count = tab_count
-
-    -- We have gathered enough evidence to stop early
-    if math.abs(space_lines_count - tab_lines_count) >= 128 then
-      break
-    end
-
-    ::next_line::
   end
+
+
+  ::prepare_result::
 
   if verbose then
     print("Guess Indent:")
@@ -190,6 +208,9 @@ function M.guess_from_buffer(verbose)
         print(k, "space:", v)
       end
     end
+
+    print("Lines loaded:", v_num_lines_loaded)
+    print("Lines iterated:", v_lines_iterated)
   end
 
   -- Get most common indentation style
