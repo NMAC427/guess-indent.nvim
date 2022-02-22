@@ -1,18 +1,18 @@
 local M = {}
 
 local function setup_commands()
-  vim.cmd [[
+  vim.cmd([[
     command! GuessIndent :lua require("guess-indent").set_from_buffer()
-  ]]
+  ]])
 end
 
 local function setup_autocommands()
-  vim.cmd [[
+  vim.cmd([[
     augroup GuessIndent
       autocmd!
       autocmd BufReadPost * :GuessIndent
     augroup END
-  ]]
+  ]])
 end
 
 -- Return true if the string looks like an inline comment.
@@ -94,7 +94,7 @@ function M.guess_from_buffer(verbose)
   -- Optional multiline comment termination pattern that we're matching against.
   local multiline_pattern = nil
 
-  for chunk_start = 0, (max_num_lines-1), chunk_size do
+  for chunk_start = 0, (max_num_lines - 1), chunk_size do
     -- Load new chunk
     local lines = vim.api.nvim_buf_get_lines(0, chunk_start, math.min(chunk_start + chunk_size, max_num_lines), false)
     v_num_lines_loaded = v_num_lines_loaded + #lines
@@ -165,7 +165,6 @@ function M.guess_from_buffer(verbose)
         end
       end
 
-
       if tab_count ~= 0 and space_count == 0 and last_space_count == 0 then
         -- Is using tabs
         tab_lines_count = tab_lines_count + 1
@@ -197,7 +196,6 @@ function M.guess_from_buffer(verbose)
     end
   end
 
-
   ::prepare_result::
 
   if verbose then
@@ -216,9 +214,9 @@ function M.guess_from_buffer(verbose)
   end
 
   -- Get most common indentation style
-  if (tab_lines_count > space_lines_count and tab_lines_count > 0) then
+  if tab_lines_count > space_lines_count and tab_lines_count > 0 then
     return "tabs"
-  elseif (space_lines_count > 0) then
+  elseif space_lines_count > 0 then
     local max_count = -1
     local max_spaces = 4
 
