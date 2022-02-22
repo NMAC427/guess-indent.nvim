@@ -1,9 +1,9 @@
 local M = {}
 
-local function setup_commands()
-  vim.cmd [[
-    command! GuessIndent :lua require("guess-indent").set_from_buffer()
-  ]]
+local function setup_commands(opts)
+  vim.api.nvim_add_user_command('GuessIndent', function ()
+    require("guess-indent").set_from_buffer(opts)
+  end, {})
 end
 
 local function setup_autocommands()
@@ -46,7 +46,7 @@ local function is_comment_block_start(line)
   return nil
 end
 
-local function set_indentation(indentation)
+local function set_indentation(indentation, opts)
   if indentation == nil then
     return
   end
@@ -55,6 +55,9 @@ local function set_indentation(indentation)
 
   if indentation == "tabs" then
     set_buffer_opt(0, "expandtab", false)
+    if opts.tabstop ~= nil then
+      set_buffer_opt(0, "tabstop", opts.tabstop)
+    end
     print("Did set indentation to tabs.")
   elseif type(indentation) == "number" and indentation > 0 then
     set_buffer_opt(0, "expandtab", true)
@@ -234,20 +237,22 @@ function M.guess_from_buffer(verbose)
   end
 end
 
-function M.set_from_buffer()
+function M.set_from_buffer(opts)
   local indentation = M.guess_from_buffer()
-  set_indentation(indentation)
+  set_indentation(indentation, opts)
 end
 
-function M.setup(opts)
-  setup_commands()
-
+function M.setup(user_opts)
   -- Set default values
-  opts = opts or {}
+  local opts = {
+    auto_cmd = true,
+    tabstop = nil,
+  }
 
-  if opts.auto_cmd == nil then
-    opts.auto_cmd = true
-  end
+  -- override defaults with user values
+  opts = vim.tbl_extend('force', opts, user_opts)
+
+  setup_commands(opts)
 
   -- Apply options
   if opts.auto_cmd then
