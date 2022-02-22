@@ -19,6 +19,7 @@ end
 -- SEE: https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax)#Inline_comments
 local function is_comment_inline(line)
   -- Check if it starts with a comment prefix
+  -- stylua: ignore start
   return not not (
     line:match("^//") or    -- C style
     line:match("^#") or     -- Python, Shell, Perl
@@ -26,6 +27,7 @@ local function is_comment_inline(line)
     line:match("^%%") or    -- TeX
     line:match("^;")        -- Lisp, Assembly
   )
+  -- stylua: ignore end
 end
 
 -- Only check beginning of line. Else we would need an actual parser to
