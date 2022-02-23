@@ -134,7 +134,7 @@ function M.guess_from_buffer(verbose)
 
           -- If the line starts with whitespace followed by a letter or
           -- number it very likely isn't the start of a comment.
-          if c_idx ~= 1 or char:match("[%w%d]") then
+          if c_idx ~= 1 and char:match("[%w%d]") then
             break
           end
 
@@ -225,6 +225,11 @@ function M.guess_from_buffer(verbose)
         max_count = count
         max_spaces = n_spaces
       end
+    end
+
+    -- There must be a clear majority, else return nil
+    if max_count < space_lines_count * 0.5 then
+      return nil
     end
 
     return max_spaces
