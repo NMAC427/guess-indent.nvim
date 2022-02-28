@@ -13,7 +13,7 @@ local function setup_autocommands()
   vim.cmd([[
     augroup GuessIndent
       autocmd!
-      autocmd BufReadPost * :GuessIndent
+      autocmd BufReadPost * :lua require("guess-indent").set_from_buffer(true)
     augroup END
   ]])
 end
@@ -235,7 +235,33 @@ function M.guess_from_buffer()
   end
 end
 
-function M.set_from_buffer()
+-- Set the indentation based on the contents of the current buffer.
+-- The argument `auto_cmd` should only be set to true if this function gets
+-- called by an auto command.
+function M.set_from_buffer(auto_cmd)
+  if auto_cmd then
+    -- Filter
+    local filetype = vim.bo.filetype
+    local buftype = vim.bo.buftype
+
+    utils.v_print(2, "File type:", filetype)
+    utils.v_print(2, "Buffer type:", buftype)
+
+    for _, ft in ipairs(config.filetype_exclude) do
+      if ft == filetype then
+        utils.v_print(2, "Excluded because of filetype.")
+        return
+      end
+    end
+
+    for _, bt in ipairs(config.buftype_exclude) do
+      if bt == buftype then
+        utils.v_print(2, "Excluded because of buftype.")
+        return
+      end
+    end
+  end
+
   local indentation = M.guess_from_buffer()
   set_indentation(indentation)
 end

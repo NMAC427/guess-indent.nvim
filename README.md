@@ -48,9 +48,21 @@ You can also run it manually using the `:GuessIndent` command.
 The plugin provides the following configuration options:
 
 ```lua
+-- This is the default configuration
 require('guess-indent').setup {
   auto_cmd = true,  -- Set to false to disable automatic execution
-  verbose = 0,      -- Output verbosity:  0 = silent, 1 = normal, 2 = debug
+  filetype_exclude = {  -- A list of filetypes for which the auto command gets disabled
+    "netrw",
+    "tutor",
+    "",
+  },
+  buftype_exclude = {  -- A list of buffer types for which the auto command gets disabled
+    "help",
+    "nofile",
+    "terminal",
+    "prompt",
+  },
+  verbose = 0,  -- Output verbosity:  0 = silent, 1 = normal, 2 = debug
 }
 ```
 

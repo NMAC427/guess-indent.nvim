@@ -2,6 +2,17 @@ local M = {}
 
 local default_config = {
   auto_cmd = true,
+  filetype_exclude = {
+    "netrw",
+    "tutor",
+    "",
+  },
+  buftype_exclude = {
+    "help",
+    "nofile",
+    "terminal",
+    "prompt",
+  },
   verbose = 0,
 }
 
