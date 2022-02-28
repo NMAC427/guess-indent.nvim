@@ -1,3 +1,4 @@
+local utils = require("guess-indent.utils")
 local config = require("guess-indent.config")
 
 local M = {}
@@ -51,27 +52,23 @@ local function is_comment_block_start(line)
 end
 
 local function set_indentation(indentation)
-  if indentation == nil then
-    return
-  end
-
   local set_buffer_opt = vim.api.nvim_buf_set_option
 
   if indentation == "tabs" then
     set_buffer_opt(0, "expandtab", false)
-    print("Did set indentation to tabs.")
+    utils.v_print(1, "Did set indentation to tabs.")
   elseif type(indentation) == "number" and indentation > 0 then
     set_buffer_opt(0, "expandtab", true)
     set_buffer_opt(0, "tabstop", indentation)
     set_buffer_opt(0, "softtabstop", indentation)
     set_buffer_opt(0, "shiftwidth", indentation)
-    print("Did set indentation to", indentation, "spaces.")
+    utils.v_print(1, "Did set indentation to", indentation, "spaces.")
   else
-    print("Failed to detect indentation style.")
+    utils.v_print(1, "Failed to detect indentation style.")
   end
 end
 
-function M.guess_from_buffer(verbose)
+function M.guess_from_buffer()
   -- Line loading configuration
   -- Instead of loading all lines at once, load them lazily in chunks.
   local max_num_lines = 1028
@@ -200,20 +197,17 @@ function M.guess_from_buffer(verbose)
 
   ::prepare_result::
 
-  if verbose then
-    print("Guess Indent:")
-    print("Lines using tabs:", tab_lines_count)
-    print("Lines using spaces:", space_lines_count)
-
-    if space_lines_count ~= 0 then
-      for k, v in pairs(spaces) do
-        print(k, "space:", v)
-      end
+  -- Verbose debug output
+  utils.v_print(2, "Guess Indent")
+  utils.v_print(2, "Lines using tabs:", tab_lines_count)
+  utils.v_print(2, "Lines using spaces:", space_lines_count)
+  if space_lines_count ~= 0 then
+    for k, v in pairs(spaces) do
+      utils.v_print(2, k, "space:", v)
     end
-
-    print("Lines loaded:", v_num_lines_loaded)
-    print("Lines iterated:", v_lines_iterated)
   end
+  utils.v_print(2, "Lines loaded:", v_num_lines_loaded)
+  utils.v_print(2, "Lines iterated:", v_lines_iterated)
 
   -- Get most common indentation style
   if tab_lines_count > space_lines_count and tab_lines_count > 0 then

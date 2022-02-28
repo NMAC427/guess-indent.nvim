@@ -2,6 +2,7 @@ local M = {}
 
 local default_config = {
   auto_cmd = true,
+  verbose = 0,
 }
 
 -- The current active config

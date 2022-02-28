@@ -50,6 +50,7 @@ The plugin provides the following configuration options:
 ```lua
 require('guess-indent').setup {
   auto_cmd = true,  -- Set to false to disable automatic execution
+  verbose = 0,      -- Output verbosity:  0 = silent, 1 = normal, 2 = debug
 }
 ```
 
