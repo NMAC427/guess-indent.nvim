@@ -1,3 +1,5 @@
+local config = require("guess-indent.config")
+
 local M = {}
 
 local function setup_commands()
@@ -244,18 +246,12 @@ function M.set_from_buffer()
   set_indentation(indentation)
 end
 
-function M.setup(opts)
+function M.setup(options)
   setup_commands()
+  config.set_config(options)
 
-  -- Set default values
-  opts = opts or {}
-
-  if opts.auto_cmd == nil then
-    opts.auto_cmd = true
-  end
-
-  -- Apply options
-  if opts.auto_cmd then
+  -- Create AutoCmd
+  if config.auto_cmd then
     setup_autocommands()
   end
 end
