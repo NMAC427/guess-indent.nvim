@@ -1,0 +1,101 @@
+*guess_indent.txt*                        Automatic indentation style detection
+
+
+          ░░░░░█▀▀░█░█░█▀▀░█▀▀░█▀▀░▀█▀░█▀█░█▀▄░█▀▀░█▀█░▀█▀ ~
+          ░░▀░░█░█░█░█░█▀▀░▀▀█░▀▀█░░█░░█░█░█░█░█▀▀░█░█░░█░ ~
+          ░░▀░░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀░▀░▀▀░░▀▀▀░▀░▀░░▀░ ~
+
+          Automatic indentation style detection for Neovim ~
+
+
+          Author: Nicolas Camenisch <garnele007@gmail.com> ~
+
+==============================================================================
+CONTENTS                                                         *GuessIndent*
+
+  Introduction............................ |GuessIndent-introduction|
+  Setup................................... |GuessIndent-setup|
+  Commands................................ |GuessIndent-commands|
+  License................................. |GuessIndent-license|
+
+==============================================================================
+INTRODUCTION                                        *GuessIndent-introduction*
+
+The goal of this plugin is to automatically detect the indentation style used
+in a buffer and updating the buffer options accordingly. This mimics the
+"Guess Indentation Settings From Buffer" function built into Sublime Text.
+
+Whenever you open a new buffer, guess-indent looks at the first few hundred
+lines and uses them to determine how the buffer should be indented. It then
+automatically updates the buffer options so that they match the opened file.
+
+==============================================================================
+SETUP                                                      *GuessIndent-setup*
+
+To configure guess-indent you have to call the setup function. It takes a
+single table as an argument.
+
+Example:
+>
+    require('guess-indent').setup {
+      -- Custom configuration ...  
+    }
+<
+
+                                                         *GuessIndent-options*
+You can provide the setup function with various different options. If you
+specify a value for one of these options, a default value will be used
+instead.
+
+`auto_cmd`		If this option is set to true, an auto command is
+			created that guesses the indentation style for each
+			buffer that gets opened.
+
+`filetype_exclude`	A list of file types. If you open a buffer and its
+			'filetype' is contained in this list, then 
+			guess-indent won't run automatically. Note this only
+			changes the behavior if `auto_cmd` is set to true.
+
+`buftype_exclude`	Same as `filetype_exclude` but for 'buftype' instead.
+
+`verbose`		How verbose the output of guess-indent should be. A
+			value of 0 means that nothing gets echoed to the
+			user. To get basic output set it to 1. A value of 2
+			or greater should only be used when debugging.
+
+==============================================================================
+COMMANDS                                                *GuessIndent-commands*
+
+                                                                *:GuessIndent*
+:GuessIndent		Guess the indentation of the current buffer and set
+			the buffer options accordingly.
+
+==============================================================================
+LICENSE                                                  *GuessIndent-license*
+>
+  MIT License
+
+  Copyright (c) 2022 Nicolas Camenisch
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to
+  deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+  sell copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  IN THE SOFTWARE.
+<
+
+==============================================================================
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
