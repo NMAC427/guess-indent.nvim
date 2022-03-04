@@ -13,7 +13,6 @@ local default_config = {
     "terminal",
     "prompt",
   },
-  verbose = 0,
 }
 
 -- The current active config

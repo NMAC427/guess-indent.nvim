@@ -58,17 +58,15 @@ instead.
 
 `buftype_exclude`	Same as `filetype_exclude` but for 'buftype' instead.
 
-`verbose`		How verbose the output of guess-indent should be. A
-			value of 0 means that nothing gets echoed to the
-			user. To get basic output set it to 1. A value of 2
-			or greater should only be used when debugging.
-
 ==============================================================================
 COMMANDS                                                *GuessIndent-commands*
 
                                                                 *:GuessIndent*
 :GuessIndent		Guess the indentation of the current buffer and set
 			the buffer options accordingly.
+
+Guess-indent respects the 'verbose' option. This means that you can run it
+using `:verbose GuessIndent` to get verbose output. 
 
 ==============================================================================
 LICENSE                                                  *GuessIndent-license*

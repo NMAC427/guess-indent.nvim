@@ -1,9 +1,7 @@
-local config = require("guess-indent.config")
-
 local M = {}
 
 function M.v_print(level, ...)
-  if level <= config.verbose then
+  if level <= vim.opt.verbose:get() then
     print(...)
   end
 end

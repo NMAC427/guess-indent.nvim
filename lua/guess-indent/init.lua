@@ -13,7 +13,7 @@ local function setup_autocommands()
   vim.cmd([[
     augroup GuessIndent
       autocmd!
-      autocmd BufReadPost * :lua require("guess-indent").set_from_buffer(true)
+      autocmd BufReadPost * :silent lua require("guess-indent").set_from_buffer(true)
     augroup END
   ]])
 end
@@ -56,15 +56,15 @@ local function set_indentation(indentation)
 
   if indentation == "tabs" then
     set_buffer_opt(0, "expandtab", false)
-    utils.v_print(1, "Did set indentation to tabs.")
+    print("Did set indentation to tabs.")
   elseif type(indentation) == "number" and indentation > 0 then
     set_buffer_opt(0, "expandtab", true)
     set_buffer_opt(0, "tabstop", indentation)
     set_buffer_opt(0, "softtabstop", indentation)
     set_buffer_opt(0, "shiftwidth", indentation)
-    utils.v_print(1, "Did set indentation to", indentation, "spaces.")
+    print("Did set indentation to", indentation, "spaces.")
   else
-    utils.v_print(1, "Failed to detect indentation style.")
+    print("Failed to detect indentation style.")
   end
 end
 
@@ -198,16 +198,16 @@ function M.guess_from_buffer()
   ::prepare_result::
 
   -- Verbose debug output
-  utils.v_print(2, "Guess Indent")
-  utils.v_print(2, "Lines using tabs:", tab_lines_count)
-  utils.v_print(2, "Lines using spaces:", space_lines_count)
+  utils.v_print(1, "Guess Indent")
+  utils.v_print(1, "Lines using tabs:", tab_lines_count)
+  utils.v_print(1, "Lines using spaces:", space_lines_count)
   if space_lines_count ~= 0 then
     for k, v in pairs(spaces) do
-      utils.v_print(2, k, "space:", v)
+      utils.v_print(1, k, "space:", v)
     end
   end
-  utils.v_print(2, "Lines loaded:", v_num_lines_loaded)
-  utils.v_print(2, "Lines iterated:", v_lines_iterated)
+  utils.v_print(1, "Lines loaded:", v_num_lines_loaded)
+  utils.v_print(1, "Lines iterated:", v_lines_iterated)
 
   -- Get most common indentation style
   if tab_lines_count > space_lines_count and tab_lines_count > 0 then
@@ -244,19 +244,19 @@ function M.set_from_buffer(auto_cmd)
     local filetype = vim.bo.filetype
     local buftype = vim.bo.buftype
 
-    utils.v_print(2, "File type:", filetype)
-    utils.v_print(2, "Buffer type:", buftype)
+    utils.v_print(1, "File type:", filetype)
+    utils.v_print(1, "Buffer type:", buftype)
 
     for _, ft in ipairs(config.filetype_exclude) do
       if ft == filetype then
-        utils.v_print(2, "Excluded because of filetype.")
+        utils.v_print(1, "Excluded because of filetype.")
         return
       end
     end
 
     for _, bt in ipairs(config.buftype_exclude) do
       if bt == buftype then
-        utils.v_print(2, "Excluded because of buftype.")
+        utils.v_print(1, "Excluded because of buftype.")
         return
       end
     end

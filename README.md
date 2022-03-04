@@ -62,7 +62,6 @@ require('guess-indent').setup {
     "terminal",
     "prompt",
   },
-  verbose = 0,  -- Output verbosity:  0 = silent, 1 = normal, 2 = debug
 }
 ```
 
