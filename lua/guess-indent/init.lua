@@ -52,7 +52,15 @@ local function is_comment_block_start(line)
 end
 
 local function set_indentation(indentation)
-  local set_buffer_opt = vim.api.nvim_buf_set_option
+  local function set_buffer_opt(buffer, name, value)
+    -- Setting an option takes *significantly* more time than reading it.
+    -- This wrapper function only sets the option if the new value differs
+    -- from the current value.
+    local current = vim.api.nvim_buf_get_option(buffer, name)
+    if value ~= current then
+      vim.api.nvim_buf_set_option(buffer, name, value)
+    end
+  end
 
   if indentation == "tabs" then
     set_buffer_opt(0, "expandtab", false)
