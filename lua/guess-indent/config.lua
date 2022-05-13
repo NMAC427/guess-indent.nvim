@@ -5,7 +5,6 @@ local default_config = {
   filetype_exclude = {
     "netrw",
     "tutor",
-    "",
   },
   buftype_exclude = {
     "help",
