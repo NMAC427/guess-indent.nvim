@@ -92,7 +92,12 @@ function M.guess_from_buffer()
 
   -- How many spaces are used for indentation
   local spaces = {}
-  local prev_space_delta = 0
+
+  -- This stack keeps track of all indentation levels (absolute) in the
+  -- current indentation block. This is used to calculate the current
+  -- relative indentation based on the difference to the next smaller
+  -- absolute indentation in teh current block.
+  local spaces_indent_stack = { 0 }
 
   -- Verbose Statistics
   local v_num_lines_loaded = 0
@@ -179,16 +184,28 @@ function M.guess_from_buffer()
 
       if space_count ~= 0 and tab_count == 0 and last_tab_count == 0 then
         -- Is using spaces
-        local delta = math.abs(last_space_count - space_count)
-
-        if delta == 0 then
-          delta = prev_space_delta
-        else
-          prev_space_delta = delta
+        -- Update stack of current indentation levels
+        while spaces_indent_stack[#spaces_indent_stack] > space_count do
+          table.remove(spaces_indent_stack)
         end
 
+        -- Get abs. indentation of previous level in current block
+        local prev_indent = 0
+        if spaces_indent_stack[#spaces_indent_stack] == space_count then
+          prev_indent = spaces_indent_stack[#spaces_indent_stack - 1]
+        else
+          prev_indent = spaces_indent_stack[#spaces_indent_stack]
+          table.insert(spaces_indent_stack, space_count)
+        end
+
+        -- Delta is the current relative indentation
+        local delta = space_count - prev_indent
         spaces[delta] = (spaces[delta] or 0) + 1
         space_lines_count = space_lines_count + 1
+      end
+
+      if space_count == 0 and tab_count == 0 then
+        spaces_indent_stack = { 0 }
       end
 
       last_space_count = space_count
