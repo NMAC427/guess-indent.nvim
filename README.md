@@ -18,7 +18,7 @@ lines and uses them to determine how the buffer should be indented.
 It then automatically updates the buffer options so that they match the 
 opened file.
 
-# Installation
+## Installation
 
 Install using your favorite package manager and then call the following setup
 function somewhere in your config:
@@ -38,12 +38,12 @@ use {
 }
 ```
 
-# Usage
+## Usage
 
 By default, guess-indent automatically runs whenever you open a new buffer.
 You can also run it manually using the `:GuessIndent` command.
 
-# Configuration
+## Configuration
 
 The plugin provides the following configuration options:
 
@@ -68,7 +68,15 @@ Normally it should not be necessary to disable the automatic execution of
 guess-indent, because it usually takes less than a millisecond to run,
 even for large files.
 
-# Licence
+## Alternatives
+
+- [`indent-o-matic`](https://github.com/Darazaki/indent-o-matic) - Blazingly
+    fast, written in lua, based on a very simple algorithm.
+    [Comparison](https://github.com/Darazaki/indent-o-matic/issues/12)
+- [`vim-sleuth`](https://github.com/tpope/vim-sleuth) - Very smart but slower
+    heuristic, compatible with Vim.
+
+## Licence
 
 This project is licensed under the terms of the MIT license.
 For more detail check out the [LICENSE](./LICENSE) file.
