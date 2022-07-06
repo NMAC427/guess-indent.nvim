@@ -5,7 +5,7 @@ local M = {}
 
 local function setup_commands()
   vim.cmd([[
-    command! GuessIndent :lua require("guess-indent").set_from_buffer()
+    command! -nargs=? GuessIndent :lua require("guess-indent").set_from_buffer("<args>")
   ]])
 end
 
@@ -13,9 +13,9 @@ local function setup_autocommands()
   vim.cmd([[
     augroup GuessIndent
       autocmd!
-      autocmd BufReadPost * silent lua require("guess-indent").set_from_buffer(true)
+      autocmd BufReadPost * silent lua require("guess-indent").set_from_buffer("auto_cmd")
       " Run once when saving for new files
-      autocmd BufNewFile * autocmd BufWritePost <buffer=abuf> ++once silent lua require("guess-indent").set_from_buffer(true)
+      autocmd BufNewFile * autocmd BufWritePost <buffer=abuf> ++once silent lua require("guess-indent").set_from_buffer("auto_cmd")
     augroup END
   ]])
 end
@@ -263,10 +263,10 @@ function M.guess_from_buffer()
 end
 
 -- Set the indentation based on the contents of the current buffer.
--- The argument `auto_cmd` should only be set to true if this function gets
+-- The argument `context` should only be set to `auto_cmd` if this function gets
 -- called by an auto command.
-function M.set_from_buffer(auto_cmd)
-  if auto_cmd then
+function M.set_from_buffer(context)
+  if context == "auto_cmd" then
     -- Filter
     local filetype = vim.bo.filetype
     local buftype = vim.bo.buftype
