@@ -54,7 +54,8 @@ instead.
 `filetype_exclude`	A list of file types. If you open a buffer and its
 			'filetype' is contained in this list, then 
 			guess-indent won't run automatically. Note this only
-			changes the behavior if `auto_cmd` is set to true.
+			changes the behavior if `auto_cmd` is set to true or if
+			`:GuessIndent`is run with argument `auto_cmd` .
 
 `buftype_exclude`	Same as `filetype_exclude` but for 'buftype' instead.
 
@@ -67,6 +68,9 @@ COMMANDS                                                *GuessIndent-commands*
 
 Guess-indent respects the 'verbose' option. This means that you can run it
 using `:verbose GuessIndent` to get verbose output. 
+
+If you want to run guess-indent from your own auto command you can specify the
+context as an argument using `:GuessIndent auto_cmd` .
 
 ==============================================================================
 LICENSE                                                  *GuessIndent-license*
