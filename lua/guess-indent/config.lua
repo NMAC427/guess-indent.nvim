@@ -2,6 +2,8 @@ local M = {}
 
 local default_config = {
   auto_cmd = true,
+  set_tabstop = true,
+  set_softtabstop = true,
   filetype_exclude = {
     "netrw",
     "tutor",
