@@ -66,15 +66,26 @@ local function set_indentation(indentation)
 
   if indentation == "tabs" then
     set_buffer_opt(0, "expandtab", false)
+    set_buffer_opt(0, "shiftwidth", 0)
+    if config.set_softtabstop then
+      set_buffer_opt(0, "softtabstop", 0)
+    end
     print("Did set indentation to tabs.")
+    vim.api.nvim_exec_autocmds("User", { pattern = "GuessIndentTabs" })
   elseif type(indentation) == "number" and indentation > 0 then
     set_buffer_opt(0, "expandtab", true)
-    set_buffer_opt(0, "tabstop", indentation)
-    set_buffer_opt(0, "softtabstop", indentation)
     set_buffer_opt(0, "shiftwidth", indentation)
+    if config.set_softtabstop then
+      set_buffer_opt(0, "softtabstop", indentation)
+    end
+    if config.set_tabstop then
+      set_buffer_opt(0, "tabstop", indentation)
+    end
     print("Did set indentation to", indentation, "spaces.")
+    vim.api.nvim_exec_autocmds("User", { pattern = "GuessIndentSpaces" })
   else
     print("Failed to detect indentation style.")
+    vim.api.nvim_exec_autocmds("User", { pattern = "GuessIndentNone" })
   end
 end
 
