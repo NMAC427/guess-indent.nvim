@@ -2,6 +2,7 @@ local M = {}
 
 local default_config = {
   auto_cmd = true,
+  override_editorconfig = false,
   filetype_exclude = {
     "netrw",
     "tutor",
