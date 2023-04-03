@@ -53,7 +53,9 @@ instead.
 
 `override_editorconfig`	If this option is set to true, guessed indentation
 			will take precedence over settings set by
-			.editorconfig
+			.editorconfig. Note this only changes the behavior if
+			`auto_cmd` is set to true or if `:GuessIndent` is run
+			with argument `autocmd`.
 
 `filetype_exclude`	A list of file types. If you open a buffer and its
 			'filetype' is contained in this list, then 

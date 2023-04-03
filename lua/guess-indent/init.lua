@@ -266,14 +266,16 @@ end
 -- The argument `context` should only be set to `auto_cmd` if this function gets
 -- called by an auto command.
 function M.set_from_buffer(context)
-  if not config.override_editorconfig then
-    local editorconfig = vim.b.editorconfig
-    if editorconfig and (editorconfig.indent_style or editorconfig.indent_size or editorconfig.tab_width) then
-      utils.v_print(1, "Excluded because of editorconfig settings.")
-      return
-    end
-  end
   if context == "auto_cmd" then
+    -- editorconfig interoperability
+    if not config.override_editorconfig then
+      local editorconfig = vim.b.editorconfig
+      if editorconfig and (editorconfig.indent_style or editorconfig.indent_size or editorconfig.tab_width) then
+        utils.v_print(1, "Excluded because of editorconfig settings.")
+        return
+      end
+    end
+
     -- Filter
     local filetype = vim.bo.filetype
     local buftype = vim.bo.buftype
