@@ -51,6 +51,10 @@ instead.
 			created that guesses the indentation style for each
 			buffer that gets opened.
 
+`override_editorconfig`	If this option is set to true, guessed indentation
+			will take precedence over settings set by
+			.editorconfig
+
 `filetype_exclude`	A list of file types. If you open a buffer and its
 			'filetype' is contained in this list, then 
 			guess-indent won't run automatically. Note this only
