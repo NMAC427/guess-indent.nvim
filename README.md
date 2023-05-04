@@ -62,6 +62,9 @@ require('guess-indent').setup {
     "terminal",
     "prompt",
   },
+  -- Hooks before/after setting indent. First arg is true if tabs are being set
+  pre_guess_hook = nil, -- Return false to abort setting indentations
+  post_guess_hook = nil,
 }
 ```
 

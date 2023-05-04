@@ -13,6 +13,8 @@ local default_config = {
     "terminal",
     "prompt",
   },
+  pre_guess_hook = nil,
+  post_guess_hook = nil,
 }
 
 -- The current active config

@@ -64,6 +64,10 @@ local function set_indentation(indentation)
     end
   end
 
+  if config.pre_guess_hook ~= nil then
+    config.pre_guess_hook(indentation == "tabs")
+  end
+
   if indentation == "tabs" then
     set_buffer_opt(0, "expandtab", false)
     print("Did set indentation to tabs.")
@@ -76,6 +80,11 @@ local function set_indentation(indentation)
   else
     print("Failed to detect indentation style.")
   end
+
+  if config.post_guess_hook ~= nil then
+    config.post_guess_hook(indentation == "tabs")
+  end
+
 end
 
 function M.guess_from_buffer()
