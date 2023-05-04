@@ -65,6 +65,12 @@ instead.
 
 `buftype_exclude`	Same as `filetype_exclude` but for 'buftype' instead.
 
+`pre_guess_hook`	Hook before indent is being setted. First arg is true
+			if tabs are being set. You can return false to abort
+			setting indentations
+
+`post_guess_hook`	Same as `pre_guess_hook` but after setting indents.
+
 ==============================================================================
 COMMANDS                                                *GuessIndent-commands*
 
