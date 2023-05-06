@@ -148,11 +148,13 @@ function M.guess_from_buffer(bufnr)
 
   -- How many spaces are used for indentation
   local spaces = {}
+  -- How many spaces are used for indentation relative to the previous level
+  local relative_spaces = {}
 
   -- This stack keeps track of all indentation levels (absolute) in the
   -- current indentation block. This is used to calculate the current
   -- relative indentation based on the difference to the next smaller
-  -- absolute indentation in teh current block.
+  -- absolute indentation in the current block.
   local spaces_indent_stack = { 0 }
 
   -- Verbose Statistics
@@ -241,9 +243,12 @@ function M.guess_from_buffer(bufnr)
 
       if space_count ~= 0 and tab_count == 0 and last_tab_count == 0 then
         -- Is using spaces
+        spaces[space_count] = (spaces[space_count] or 0) + 1
+
         -- Update stack of current indentation levels
+        local last_popped_indent = space_count
         while spaces_indent_stack[#spaces_indent_stack] > space_count do
-          table.remove(spaces_indent_stack)
+          last_popped_indent = table.remove(spaces_indent_stack)
         end
 
         -- Get abs. indentation of previous level in current block
@@ -257,8 +262,14 @@ function M.guess_from_buffer(bufnr)
 
         -- Delta is the current relative indentation
         local delta = space_count - prev_indent
-        spaces[delta] = (spaces[delta] or 0) + 1
+        relative_spaces[delta] = (relative_spaces[delta] or 0) + 1
         space_lines_count = space_lines_count + 1
+
+        -- Also account for deindentation
+        local deindent_delta = last_popped_indent - space_count
+        if deindent_delta ~= 0 then
+          relative_spaces[deindent_delta] = (relative_spaces[deindent_delta] or 0) + 1
+        end
       end
 
       if space_count == 0 and tab_count == 0 then
@@ -284,8 +295,14 @@ function M.guess_from_buffer(bufnr)
   utils.v_print(1, "Lines using tabs:", tab_lines_count)
   utils.v_print(1, "Lines using spaces:", space_lines_count)
   if space_lines_count ~= 0 then
+    utils.v_print(1, "Relative Indentation")
+    for k, v in pairs(relative_spaces) do
+      utils.v_print(1, " ", k, "spaces:", v)
+    end
+
+    utils.v_print(1, "Absolute Indentation")
     for k, v in pairs(spaces) do
-      utils.v_print(1, k, "space:", v)
+      utils.v_print(1, " ", k, "spaces:", v)
     end
   end
   utils.v_print(1, "Lines loaded:", v_num_lines_loaded)
@@ -295,18 +312,39 @@ function M.guess_from_buffer(bufnr)
   if tab_lines_count > space_lines_count and tab_lines_count > 0 then
     return "tabs"
   elseif space_lines_count > 0 then
-    local max_count = -1
+    local max_score = -1
     local max_spaces = 4
 
-    for n_spaces, count in pairs(spaces) do
-      if count > max_count then
-        max_count = count
+    utils.v_print(1, "Spaces Scoring")
+
+    for n_spaces, relative_count in pairs(relative_spaces) do
+      -- Compute score
+      -- This is where the main SPACE HEURISTIC lives
+      local log_n_spaces = math.log(n_spaces)
+      local score = relative_count / space_lines_count
+
+      for abs_spaces, abs_count in pairs(spaces) do
+        -- Check if this indentation would work for other lines in the file
+        if (abs_spaces % n_spaces) == 0 then
+          score = score + (abs_count / space_lines_count) * (log_n_spaces / math.log(abs_spaces + 1))
+        end
+      end
+
+      -- Large penalty for absurdly large indentation
+      if n_spaces > 8 then
+        score = score - 1
+      end
+
+      utils.v_print(1, " ", n_spaces, "score:", score)
+
+      if score > max_score then
+        max_score = score
         max_spaces = n_spaces
       end
     end
 
     -- There must be a clear majority, else return nil
-    if max_count < space_lines_count * 0.5 then
+    if max_score < 0.75 then
       return nil
     end
 
