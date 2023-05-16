@@ -61,8 +61,9 @@ local function set_indentation(indentation)
     local current = vim.api.nvim_buf_get_option(buffer, name)
     if value ~= current then
       vim.api.nvim_buf_set_option(buffer, name, value)
-      vim.api.nvim_exec_autocmds("OptionSet", { pattern = name })
     end
+    -- always doautocmd to ensure each newly loaded buffer gets an autocmd trigger
+    vim.api.nvim_exec_autocmds("OptionSet", { pattern = name })
   end
 
   if indentation == "tabs" then
