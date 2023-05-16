@@ -61,7 +61,7 @@ local function set_indentation(indentation)
     local current = vim.api.nvim_buf_get_option(buffer, name)
     if value ~= current then
       vim.api.nvim_buf_set_option(buffer, name, value)
-      vim.cmd("doautocmd OptionSet " .. name)
+      vim.api.nvim_exec_autocmds("OptionSet", { pattern = name })
     end
   end
 
