@@ -110,13 +110,17 @@ local function set_indentation(indentation, bufnr, silent)
 
   local notification = "Failed to detect indentation style."
   if indentation == "tabs" then
-    set_buffer_opt(bufnr, "expandtab", false)
+    for opt, value in pairs(config.on_tab_options) do
+      set_buffer_opt(bufnr, opt, value)
+    end
     notification = "Did set indentation to tabs."
   elseif type(indentation) == "number" and indentation > 0 then
-    set_buffer_opt(bufnr, "expandtab", true)
-    set_buffer_opt(bufnr, "tabstop", indentation)
-    set_buffer_opt(bufnr, "softtabstop", indentation)
-    set_buffer_opt(bufnr, "shiftwidth", indentation)
+    for opt, value in pairs(config.on_space_options) do
+      if value == "detected" then
+        value = indentation
+      end
+      set_buffer_opt(bufnr, opt, value)
+    end
     notification = ("Did set indentation to %s space(s)."):format(indentation)
   end
   if not silent then

@@ -5,6 +5,8 @@ local M = {}
 ---@field override_editorconfig boolean? Whether or not to override indentation set by Editorconfig
 ---@field filetype_exclude string[]? Filetypes to ignore indentation detection in
 ---@field buftype_exclude string[]? Buffer types to ignore indentation detection in
+---@field on_tab_options table<string, any>? A table of vim options when tabs are detected
+---@field on_space_options table<string, any>? A table of vim options when spaces are detected
 
 ---@class GuessIndentConfigModule: GuessIndentConfig
 ---@field set_config fun(GuessIndentConfig)
@@ -22,6 +24,15 @@ local default_config = {
     "nofile",
     "terminal",
     "prompt",
+  },
+  on_tab_options = {
+    ["expandtab"] = false,
+  },
+  on_space_options = {
+    ["expandtab"] = true,
+    ["tabstop"] = "detected",
+    ["softtabstop"] = "detected",
+    ["shiftwidth"] = "detected",
   },
 }
 
