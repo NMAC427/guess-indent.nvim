@@ -13,6 +13,15 @@ local default_config = {
     "terminal",
     "prompt",
   },
+  on_tab_options = {
+    ["expandtab"] = false,
+  },
+  on_space_options = {
+    ["expandtab"] = true,
+    ["tabstop"] = "detected",
+    ["softtabstop"] = "detected",
+    ["shiftwidth"] = "detected",
+  },
 }
 
 -- The current active config
