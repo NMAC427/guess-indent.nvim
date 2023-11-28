@@ -65,13 +65,17 @@ local function set_indentation(indentation)
   end
 
   if indentation == "tabs" then
-    set_buffer_opt(0, "expandtab", false)
+    for opt, value in pairs(config.on_tab_options) do
+      set_buffer_opt(0, opt, value)
+    end
     print("Did set indentation to tabs.")
   elseif type(indentation) == "number" and indentation > 0 then
-    set_buffer_opt(0, "expandtab", true)
-    set_buffer_opt(0, "tabstop", indentation)
-    set_buffer_opt(0, "softtabstop", indentation)
-    set_buffer_opt(0, "shiftwidth", indentation)
+    for opt, value in pairs(config.on_space_options) do
+      if value == "detected" then
+        value = indentation
+      end
+      set_buffer_opt(0, opt, value)
+    end
     print("Did set indentation to", indentation, "spaces.")
   else
     print("Failed to detect indentation style.")

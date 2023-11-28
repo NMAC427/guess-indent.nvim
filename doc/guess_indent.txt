@@ -65,6 +65,12 @@ instead.
 
 `buftype_exclude`	Same as `filetype_exclude` but for 'buftype' instead.
 
+`on_tab_options`	A table of vim options when tabs are detected.
+
+`on_space_options`	A table of vim options when spaces are detected.
+			If the option value is `'detected'`, The value is set
+			to the automatically detected indent size.
+
 ==============================================================================
 COMMANDS                                                *GuessIndent-commands*
 
