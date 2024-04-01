@@ -13,7 +13,7 @@ local function setup_autocommands()
   vim.cmd([[
     augroup GuessIndent
       autocmd!
-      autocmd BufReadPost * silent lua require("guess-indent").set_from_buffer("auto_cmd")
+      autocmd BufReadPost,BufEnter * silent lua require("guess-indent").set_from_buffer("auto_cmd")
       " Run once when saving for new files
       autocmd BufNewFile * autocmd BufWritePost <buffer=abuf> ++once silent lua require("guess-indent").set_from_buffer("auto_cmd")
     augroup END
