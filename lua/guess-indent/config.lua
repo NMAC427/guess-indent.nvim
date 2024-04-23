@@ -1,5 +1,15 @@
 local M = {}
 
+---@class GuessIndentConfig
+---@field auto_cmd boolean? Whether to create autocommand to automatically detect indentation
+---@field override_editorconfig boolean? Whether or not to override indentation set by Editorconfig
+---@field filetype_exclude string[]? Filetypes to ignore indentation detection in
+---@field buftype_exclude string[]? Buffer types to ignore indentation detection in
+
+---@class GuessIndentConfigModule: GuessIndentConfig
+---@field set_config fun(GuessIndentConfig)
+
+---@type GuessIndentConfig
 local default_config = {
   auto_cmd = true,
   override_editorconfig = false,
@@ -18,6 +28,7 @@ local default_config = {
 -- The current active config
 M.values = vim.deepcopy(default_config)
 
+---@param user_config GuessIndentConfig
 function M.set_config(user_config)
   if not user_config then
     user_config = {}
@@ -36,4 +47,4 @@ return setmetatable(M, {
       return t.values[key]
     end
   end,
-})
+}) --[[@as GuessIndentConfigModule]]
