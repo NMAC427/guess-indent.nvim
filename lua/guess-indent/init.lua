@@ -4,20 +4,39 @@ local config = require("guess-indent.config")
 local M = {}
 
 local function setup_commands()
-  vim.cmd([[
-    command! -nargs=? GuessIndent :lua require("guess-indent").set_from_buffer("<args>")
-  ]])
+  vim.api.nvim_create_user_command("GuessIndent", function(args)
+    local context
+    if args.args ~= "" then
+      local is_num, num = pcall(tonumber, args.args)
+      context = is_num and num or args.args
+    end
+    M.set_from_buffer(context)
+  end, { nargs = "?", desc = "Guess indentation for the current buffer" })
 end
 
 local function setup_autocommands()
-  vim.cmd([[
-    augroup GuessIndent
-      autocmd!
-      autocmd BufReadPost * silent lua require("guess-indent").set_from_buffer("auto_cmd")
-      " Run once when saving for new files
-      autocmd BufNewFile * autocmd BufWritePost <buffer=abuf> ++once silent lua require("guess-indent").set_from_buffer("auto_cmd")
-    augroup END
-  ]])
+  local augroup = vim.api.nvim_create_augroup("GuessIndent", { clear = true })
+  vim.api.nvim_create_autocmd("BufReadPost", {
+    group = augroup,
+    desc = "Guesss indentation when loading a file",
+    callback = function(args)
+      M.set_from_buffer(args.buf)
+    end,
+  })
+  vim.api.nvim_create_autocmd("BufNewFile", {
+    group = augroup,
+    desc = "Guess indentation when saving a new file",
+    callback = function(args)
+      vim.api.nvim_create_autocmd("BufWritePost", {
+        buffer = args.buf,
+        once = true,
+        group = augroup,
+        callback = function(wargs)
+          M.set_from_buffer(wargs.buf)
+        end,
+      })
+    end,
+  })
 end
 
 -- Return true if the string looks like an inline comment.
@@ -53,32 +72,37 @@ local function is_comment_block_start(line)
   return nil
 end
 
-local function set_indentation(indentation)
+local function set_indentation(indentation, bufnr, silent)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
   local function set_buffer_opt(buffer, name, value)
     -- Setting an option takes *significantly* more time than reading it.
     -- This wrapper function only sets the option if the new value differs
     -- from the current value.
-    local current = vim.api.nvim_buf_get_option(buffer, name)
+    local current = vim.bo[buffer][name]
     if value ~= current then
-      vim.api.nvim_buf_set_option(buffer, name, value)
+      vim.bo[buffer][name] = value
     end
   end
 
+  local notification = "Failed to detect indentation style."
   if indentation == "tabs" then
-    set_buffer_opt(0, "expandtab", false)
-    print("Did set indentation to tabs.")
+    set_buffer_opt(bufnr, "expandtab", false)
+    notification = "Did set indentation to tabs."
   elseif type(indentation) == "number" and indentation > 0 then
-    set_buffer_opt(0, "expandtab", true)
-    set_buffer_opt(0, "tabstop", indentation)
-    set_buffer_opt(0, "softtabstop", indentation)
-    set_buffer_opt(0, "shiftwidth", indentation)
-    print("Did set indentation to", indentation, "spaces.")
-  else
-    print("Failed to detect indentation style.")
+    set_buffer_opt(bufnr, "expandtab", true)
+    set_buffer_opt(bufnr, "tabstop", indentation)
+    set_buffer_opt(bufnr, "softtabstop", indentation)
+    set_buffer_opt(bufnr, "shiftwidth", indentation)
+    notification = ("Did set indentation to %s space(s)."):format(indentation)
+  end
+  if not silent then
+    vim.notify(notification)
   end
 end
 
-function M.guess_from_buffer()
+function M.guess_from_buffer(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
   -- Line loading configuration
   -- Instead of loading all lines at once, load them lazily in chunks.
   local max_num_lines = 1028
@@ -110,7 +134,8 @@ function M.guess_from_buffer()
 
   for chunk_start = 0, (max_num_lines - 1), chunk_size do
     -- Load new chunk
-    local lines = vim.api.nvim_buf_get_lines(0, chunk_start, math.min(chunk_start + chunk_size, max_num_lines), false)
+    local lines =
+      vim.api.nvim_buf_get_lines(bufnr, chunk_start, math.min(chunk_start + chunk_size, max_num_lines), false)
     v_num_lines_loaded = v_num_lines_loaded + #lines
 
     -- Check each line for its indentation
@@ -266,10 +291,15 @@ end
 -- The argument `context` should only be set to `auto_cmd` if this function gets
 -- called by an auto command.
 function M.set_from_buffer(context)
-  if context == "auto_cmd" then
+  local bufnr
+  if context then
+    bufnr = type(context) == "number" and context or vim.api.nvim_get_current_buf()
+    if not vim.api.nvim_buf_is_valid(bufnr) then
+      return
+    end
     -- editorconfig interoperability
     if not config.override_editorconfig then
-      local editorconfig = vim.b.editorconfig
+      local editorconfig = vim.b[bufnr].editorconfig
       if editorconfig and (editorconfig.indent_style or editorconfig.indent_size or editorconfig.tab_width) then
         utils.v_print(1, "Excluded because of editorconfig settings.")
         return
@@ -277,8 +307,8 @@ function M.set_from_buffer(context)
     end
 
     -- Filter
-    local filetype = vim.bo.filetype
-    local buftype = vim.bo.buftype
+    local filetype = vim.bo[bufnr].filetype
+    local buftype = vim.bo[bufnr].buftype
 
     utils.v_print(1, "File type:", filetype)
     utils.v_print(1, "Buffer type:", buftype)
@@ -298,8 +328,8 @@ function M.set_from_buffer(context)
     end
   end
 
-  local indentation = M.guess_from_buffer()
-  set_indentation(indentation)
+  local indentation = M.guess_from_buffer(bufnr)
+  set_indentation(indentation, bufnr, context)
 end
 
 function M.setup(options)
