@@ -4,22 +4,26 @@ local config = require("guess-indent.config")
 local M = {}
 
 local function setup_commands()
-  -- Possible Uses:
-  -- :GuessIndent                     - Guess the current buffer
-  -- :GuessIndent "auto_cmd"          - Guess the current buffer as if it were an auto command (silently, respect context)
-  -- :GuessIndent <bufnr>             - Guess the given buffer
-  -- :GuessIndent <bufnr> "auto_cmd"  - Guess the given buffer as if it were an auto command (silently, respsect context)
+  -- :GuessIndent supports several arguments that can all be provided
+  -- Arguments:
+  --  <bufnr>   - A specific buffer number (the first will be used)
+  --  context   - Respect the current file context (editorconfig or filetype/buftype exclusions)
+  --  auto_cmd  - Same as "context" but is included to support the legacy API
+  --  silent    - Disable notification of indentation detection
   vim.api.nvim_create_user_command("GuessIndent", function(args)
-    local autocmd, bufnr
-    if args.fargs[1] then -- first argument can be a buffer number or "auto_cmd"
-      local is_num, num = pcall(tonumber, args.fargs[1])
-      if is_num then -- if first argument is a buffer number, then the second can be "auto_cmd"
-        bufnr, autocmd = num, args.fargs[2] == "auto_cmd"
-      elseif args.fargs[1] == "auto_cmd" then
-        autocmd = true
+    local arguments = {}
+    for _, arg in ipairs(args.fargs) do
+      local num = tonumber(arg)
+      if num then
+        if not arguments.bufnr then
+          arguments.bufnr = num
+        end
+      else
+        arguments[arg] = true
       end
     end
-    M.set_from_buffer(bufnr, autocmd)
+    -- support "context" or "auto_cmd" for supporting legacy calls
+    M.set_from_buffer(arguments.bufnr, arguments.context or arguments.auto_cmd, arguments.silent)
   end, { nargs = "*", desc = "Guess indentation for buffer" })
 end
 
@@ -29,7 +33,7 @@ local function setup_autocommands()
     group = augroup,
     desc = "Guesss indentation when loading a file",
     callback = function(args)
-      M.set_from_buffer(args.buf, true)
+      M.set_from_buffer(args.buf, true, true)
     end,
   })
   vim.api.nvim_create_autocmd("BufNewFile", {
@@ -41,7 +45,7 @@ local function setup_autocommands()
         once = true,
         group = augroup,
         callback = function(wargs)
-          M.set_from_buffer(wargs.buf, true)
+          M.set_from_buffer(wargs.buf, true, true)
         end,
       })
     end,
@@ -313,10 +317,11 @@ end
 -- The argument `context` should only be set to `auto_cmd` if this function gets
 -- called by an auto command.
 ---@param bufnr? buffer number to set the indentation for (default is the current buffer)
----@param autocmd boolean? indication of setting from an autocmd
-function M.set_from_buffer(bufnr, autocmd)
+---@param context boolean? respect the current buffer context (excluded filetypes/buffers, editorconfig)
+---@param silent boolean? whether or not to skip notification
+function M.set_from_buffer(bufnr, context, silent)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
-  if autocmd then
+  if context then
     if not vim.api.nvim_buf_is_valid(bufnr) then
       return
     end
@@ -348,7 +353,7 @@ function M.set_from_buffer(bufnr, autocmd)
   end
 
   local indentation = M.guess_from_buffer(bufnr)
-  set_indentation(indentation, bufnr, autocmd)
+  set_indentation(indentation, bufnr, silent)
 end
 
 ---@param options GuessIndentConfig
