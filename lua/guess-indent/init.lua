@@ -4,24 +4,58 @@ local config = require("guess-indent.config")
 local M = {}
 
 local function setup_commands()
-  vim.cmd([[
-    command! -nargs=? GuessIndent :lua require("guess-indent").set_from_buffer("<args>")
-  ]])
+  -- :GuessIndent supports several arguments that can all be provided
+  -- Arguments:
+  --  <bufnr>   - A specific buffer number (the first will be used)
+  --  context   - Respect the current file context (editorconfig or filetype/buftype exclusions)
+  --  auto_cmd  - Same as "context" but is included to support the legacy API
+  --  silent    - Disable notification of indentation detection
+  vim.api.nvim_create_user_command("GuessIndent", function(args)
+    local arguments = {}
+    for _, arg in ipairs(args.fargs) do
+      local num = tonumber(arg)
+      if num then
+        if not arguments.bufnr then
+          arguments.bufnr = num
+        end
+      else
+        arguments[arg] = true
+      end
+    end
+    -- support "context" or "auto_cmd" for supporting legacy calls
+    M.set_from_buffer(arguments.bufnr, arguments.context or arguments.auto_cmd, arguments.silent)
+  end, { nargs = "*", desc = "Guess indentation for buffer" })
 end
 
 local function setup_autocommands()
-  vim.cmd([[
-    augroup GuessIndent
-      autocmd!
-      autocmd BufReadPost * silent lua require("guess-indent").set_from_buffer("auto_cmd")
-      " Run once when saving for new files
-      autocmd BufNewFile * autocmd BufWritePost <buffer=abuf> ++once silent lua require("guess-indent").set_from_buffer("auto_cmd")
-    augroup END
-  ]])
+  local augroup = vim.api.nvim_create_augroup("GuessIndent", { clear = true })
+  vim.api.nvim_create_autocmd("BufReadPost", {
+    group = augroup,
+    desc = "Guesss indentation when loading a file",
+    callback = function(args)
+      M.set_from_buffer(args.buf, true, true)
+    end,
+  })
+  vim.api.nvim_create_autocmd("BufNewFile", {
+    group = augroup,
+    desc = "Guess indentation when saving a new file",
+    callback = function(args)
+      vim.api.nvim_create_autocmd("BufWritePost", {
+        buffer = args.buf,
+        once = true,
+        group = augroup,
+        callback = function(wargs)
+          M.set_from_buffer(wargs.buf, true, true)
+        end,
+      })
+    end,
+  })
 end
 
 -- Return true if the string looks like an inline comment.
 -- SEE: https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax)#Inline_comments
+---@param line string
+---@return boolean
 local function is_comment_inline(line)
   -- Check if it starts with a comment prefix
   -- stylua: ignore start
@@ -41,6 +75,8 @@ end
 -- nil if this line doesn't start a block comment.
 --
 -- SEE: https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax)#Block_comments
+---@param line string
+---@return string?
 local function is_comment_block_start(line)
   if line:match("^/%*") then
     -- C style  /*  */
@@ -53,32 +89,46 @@ local function is_comment_block_start(line)
   return nil
 end
 
-local function set_indentation(indentation)
-  local function set_buffer_opt(buffer, name, value)
-    -- Setting an option takes *significantly* more time than reading it.
-    -- This wrapper function only sets the option if the new value differs
-    -- from the current value.
-    local current = vim.api.nvim_buf_get_option(buffer, name)
-    if value ~= current then
-      vim.api.nvim_buf_set_option(buffer, name, value)
-    end
-  end
-
-  if indentation == "tabs" then
-    set_buffer_opt(0, "expandtab", false)
-    print("Did set indentation to tabs.")
-  elseif type(indentation) == "number" and indentation > 0 then
-    set_buffer_opt(0, "expandtab", true)
-    set_buffer_opt(0, "tabstop", indentation)
-    set_buffer_opt(0, "softtabstop", indentation)
-    set_buffer_opt(0, "shiftwidth", indentation)
-    print("Did set indentation to", indentation, "spaces.")
-  else
-    print("Failed to detect indentation style.")
+---@param bufnr integer
+---@param name string
+---@param value any
+local function set_buffer_opt(bufnr, name, value)
+  -- Setting an option takes *significantly* more time than reading it.
+  -- This wrapper function only sets the option if the new value differs
+  -- from the current value.
+  local current = vim.bo[bufnr][name]
+  if value ~= current then
+    vim.bo[bufnr][name] = value
   end
 end
 
-function M.guess_from_buffer()
+---@param indentation integer|"tabs"? the number of spaces to indent or "tabs"
+---@param bufnr integer? the buffer to set the indentation for (default is current buffer)
+---@param silent boolean? whether or not to skip notification of change
+local function set_indentation(indentation, bufnr, silent)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  local notification = "Failed to detect indentation style."
+  if indentation == "tabs" then
+    set_buffer_opt(bufnr, "expandtab", false)
+    notification = "Did set indentation to tabs."
+  elseif type(indentation) == "number" and indentation > 0 then
+    set_buffer_opt(bufnr, "expandtab", true)
+    set_buffer_opt(bufnr, "tabstop", indentation)
+    set_buffer_opt(bufnr, "softtabstop", indentation)
+    set_buffer_opt(bufnr, "shiftwidth", indentation)
+    notification = ("Did set indentation to %s space(s)."):format(indentation)
+  end
+  if not silent then
+    vim.notify(notification)
+  end
+end
+
+---Guess the indentation of the current buffer
+---@param bufnr integer? the buffer to guess indentation for (default is current buffer)
+---@return integer|"tabs"? indentation
+function M.guess_from_buffer(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
   -- Line loading configuration
   -- Instead of loading all lines at once, load them lazily in chunks.
   local max_num_lines = 1028
@@ -110,7 +160,8 @@ function M.guess_from_buffer()
 
   for chunk_start = 0, (max_num_lines - 1), chunk_size do
     -- Load new chunk
-    local lines = vim.api.nvim_buf_get_lines(0, chunk_start, math.min(chunk_start + chunk_size, max_num_lines), false)
+    local lines =
+      vim.api.nvim_buf_get_lines(bufnr, chunk_start, math.min(chunk_start + chunk_size, max_num_lines), false)
     v_num_lines_loaded = v_num_lines_loaded + #lines
 
     -- Check each line for its indentation
@@ -265,11 +316,18 @@ end
 -- Set the indentation based on the contents of the current buffer.
 -- The argument `context` should only be set to `auto_cmd` if this function gets
 -- called by an auto command.
-function M.set_from_buffer(context)
-  if context == "auto_cmd" then
+---@param bufnr? buffer number to set the indentation for (default is the current buffer)
+---@param context boolean? respect the current buffer context (excluded filetypes/buffers, editorconfig)
+---@param silent boolean? whether or not to skip notification
+function M.set_from_buffer(bufnr, context, silent)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if context then
+    if not vim.api.nvim_buf_is_valid(bufnr) then
+      return
+    end
     -- editorconfig interoperability
     if not config.override_editorconfig then
-      local editorconfig = vim.b.editorconfig
+      local editorconfig = vim.b[bufnr].editorconfig
       if editorconfig and (editorconfig.indent_style or editorconfig.indent_size or editorconfig.tab_width) then
         utils.v_print(1, "Excluded because of editorconfig settings.")
         return
@@ -277,31 +335,28 @@ function M.set_from_buffer(context)
     end
 
     -- Filter
-    local filetype = vim.bo.filetype
-    local buftype = vim.bo.buftype
+    local filetype = vim.bo[bufnr].filetype
+    local buftype = vim.bo[bufnr].buftype
 
     utils.v_print(1, "File type:", filetype)
     utils.v_print(1, "Buffer type:", buftype)
 
-    for _, ft in ipairs(config.filetype_exclude) do
-      if ft == filetype then
-        utils.v_print(1, "Excluded because of filetype.")
-        return
-      end
+    if vim.tbl_contains(config.filetype_exclude, filetype) then
+      utils.v_print(1, "Excluded because of filetype.")
+      return
     end
 
-    for _, bt in ipairs(config.buftype_exclude) do
-      if bt == buftype then
-        utils.v_print(1, "Excluded because of buftype.")
-        return
-      end
+    if vim.tbl_contains(config.buftype_exclude, buftype) then
+      utils.v_print(1, "Excluded because of buftype.")
+      return
     end
   end
 
-  local indentation = M.guess_from_buffer()
-  set_indentation(indentation)
+  local indentation = M.guess_from_buffer(bufnr)
+  set_indentation(indentation, bufnr, silent)
 end
 
+---@param options GuessIndentConfig
 function M.setup(options)
   setup_commands()
   config.set_config(options)
