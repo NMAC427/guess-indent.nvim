@@ -50,6 +50,13 @@ local function setup_autocommands()
       })
     end,
   })
+  vim.api.nvim_create_autocmd("FileType", {
+    group = augroup,
+    desc = "Guess indentation when changing the file type",
+    callback = function(args)
+      M.set_from_buffer(args.buf, true, true)
+    end,
+  })
 end
 
 -- Return true if the string looks like an inline comment.
