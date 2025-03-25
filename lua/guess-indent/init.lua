@@ -164,6 +164,9 @@ function M.guess_from_buffer(bufnr)
   -- Optional multiline comment termination pattern that we're matching against.
   local multiline_pattern = nil
 
+  -- Other
+  local filetype = vim.bo.filetype
+
   for chunk_start = 0, (max_num_lines - 1), chunk_size do
     -- Load new chunk
     local lines =
@@ -188,6 +191,14 @@ function M.guess_from_buffer(bufnr)
         if line:match(multiline_pattern) then
           multiline_pattern = nil
         end
+        goto next_line
+      end
+
+      -- Special case for Google C++ (#15)
+      if
+        filetype == "cpp"
+        and (line:match("^%s*public:") or line:match("^%s*private:") or line:match("^%s*protected:"))
+      then
         goto next_line
       end
 
